@@ -3,24 +3,25 @@ module Main where
 import Data.List
 import Control.Applicative ((<*), (*>), (<$>))
 import Text.Parsec
+import Text.Parsec.Char
 import Text.Parsec.String
 
 data CSL = CSLValue String | CSLList [CSL]
     deriving Show
 
 csl :: Parser CSL
-csl = array <|> record
+csl = try (open *> record <* close <* eof)<|> record
 
-array :: Parser CSL
-array = try (open *>  (return . CSLList $ []) <* close)
-        <|>
-        open *> record <* close
+list :: Parser CSL
+list = try (open *>  (return . CSLList $ []) <* close)
+       <|>
+       open *> record <* close
 
 record :: Parser CSL
 record = CSLList <$> sepBy field comma
 
 field :: Parser CSL
-field = array <|> CSLValue <$> escaped <|> CSLValue <$> nonEscaped
+field = list <|> CSLValue <$> escaped <|> CSLValue <$> nonEscaped
 
 
 escaped :: Parser String
